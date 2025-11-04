@@ -8,7 +8,7 @@ import (
 
 type UserRepository interface {
 	//Create() error
-	GetByID(id int64) (*models.User, error)
+	GetByID(id string) (*models.User, error)
 	Create(username string, email string, password string) (*models.User, error)
 	GetAll() ([]*models.User, error)
 	DeleteByID(id int64) error
@@ -110,7 +110,7 @@ func (u *UserRepositoryImpl) Create(username string, email string, password stri
 		return nil, err
 	}
 
-	user, err := u.GetByID(lastInsertID)
+	user, err := u.GetByID(string(lastInsertID))
 
 	if err != nil {
 		fmt.Println("Error fetching user after insert:", err)
@@ -122,7 +122,7 @@ func (u *UserRepositoryImpl) Create(username string, email string, password stri
 	return user, nil
 }
 
-func (u *UserRepositoryImpl) GetByID(id int64) (*models.User, error) {
+func (u *UserRepositoryImpl) GetByID(id string) (*models.User, error) {
 	fmt.Println("fetching user in UserRepository")
 
 	// Step 1: Prepare the query

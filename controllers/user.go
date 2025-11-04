@@ -6,6 +6,7 @@ import (
 	"AuthInGo/utils"
 	"fmt"
 	"net/http"
+	
 )
 
 type UserController struct {
@@ -20,50 +21,50 @@ func NewUserController(_userService services.UserService) *UserController{
 }
 func (uc *UserController) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	// create a dto for payload
-	var payload dto.GetUserByIdDTO
 
-	//readjson and give error
-	if jsonErr := utils.ReadJsonBody(r, &payload); jsonErr != nil {
-		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Something went wrong while getting user by id", jsonErr)
+	fmt.Println("Fetching user by ID in UserController")
+	userId:= r.URL.Query().Get("id")  
+	if userId == ""{
+		userId = r.Context().Value("userID").(string)
+	}
+	if userId == ""{
+		utils.WriteJsonErrorResponse(w,http.StatusBadRequest,"User ID is required", fmt.Errorf("missing userID"))
 		return
 	}
 
-	fmt.Println("Payload received:", payload.Id)
-	//validate payload
-	if validationErr := utils.Validator.Struct(payload); validationErr != nil {
-		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid input data", validationErr)
+
+	user,err:=  uc.UserService.GetUserByID(userId)
+
+	if err!=nil{
+		utils.WriteJsonErrorResponse(w,http.StatusInternalServerError,"Failed to fetch user",err)
+	}
+
+
+	if user==nil{
+		utils.WriteJsonErrorResponse(w,http.StatusNotFound,"User not found", fmt.Errorf("User with no data"))
 		return
 	}
 
-	user, err := uc.UserService.GetUserByID(payload.Id)
-
-	//deal with this err
-	if err != nil {
-		utils.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Failed to get user", err)
-		return
-	}
-
-	//success response
-	utils.WriteJsonSuccessResponse(w, http.StatusOK, "User got successfully", user)
-
+	utils.WriteJsonSuccessResponse(w,http.StatusOK,"User fetched successfully", user)
+	fmt.Println("User fetched succesfully" , user)
 }
 
 func (uc *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 
-	var payload dto.CreateUserDTO
+	payload := r.Context().Value("payload").(dto.CreateUserDTO) 
 
 	//readjson and give error
-	if jsonErr := utils.ReadJsonBody(r, &payload); jsonErr != nil {
-		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Something went wrong while reading the json", jsonErr)
-		return
-	}
+	// if jsonErr := utils.ReadJsonBody(r, &payload); jsonErr != nil {
+	// 	utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Something went wrong while reading the json", jsonErr)
+	// 	return
+	// }
 
-	fmt.Println("Payload received:", payload)
-	//validate payload
-	if validationErr := utils.Validator.Struct(payload); validationErr != nil {
-		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid input data", validationErr)
-		return
-	}
+	 fmt.Println("Payload received:", payload)
+	// //validate payload
+	// if validationErr := utils.Validator.Struct(payload); validationErr != nil {
+	// 	utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid input data", validationErr)
+	// 	return
+	// }
 
 	user, err := uc.UserService.CreateUser(&payload)
 
@@ -79,18 +80,21 @@ func (uc *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (uc *UserController) Login(w http.ResponseWriter,r *http.Request){
 	fmt.Println("login User called in UserController")
 
-	var payload dto.LoginUserRequestDTO
-	jsonErr := utils.ReadJsonBody(r,&payload);
-	if jsonErr != nil{
-		utils.WriteJsonErrorResponse(w,http.StatusBadRequest,"Something went wrong while logging in",jsonErr)
-		return
-	}
+	payload := r.Context().Value("payload").(dto.LoginUserRequestDTO)
 
-	validationErr := utils.Validator.Struct(payload)
-	if validationErr != nil{
-		utils.WriteJsonErrorResponse(w,http.StatusBadRequest,"Invalid input data",validationErr)
-		return
-	}
+	fmt.Println("payload recieved",payload)
+
+	// jsonErr := utils.ReadJsonBody(r,&payload);
+	// if jsonErr != nil{
+	// 	utils.WriteJsonErrorResponse(w,http.StatusBadRequest,"Something went wrong while logging in",jsonErr)
+	// 	return
+	// }
+
+	// validationErr := utils.Validator.Struct(payload)
+	// if validationErr != nil{
+	// 	utils.WriteJsonErrorResponse(w,http.StatusBadRequest,"Invalid input data",validationErr)
+	// 	return
+	// }
 
 	jwtToken,err:=uc.UserService.LoginUser(&payload)
 	if err!=nil{
