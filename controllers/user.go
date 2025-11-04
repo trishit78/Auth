@@ -18,17 +18,62 @@ func NewUserController(_userService services.UserService) *UserController{
 		UserService: _userService,
 	}
 }
+func (uc *UserController) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	// create a dto for payload
+	var payload dto.GetUserByIdDTO
 
-func (uc *UserController)GetUserByID(w http.ResponseWriter,r *http.Request){
-	fmt.Println("getting user in user controller")
-	uc.UserService.GetUserByID()
-	w.Write([]byte("User fetching endpoint"))
+	//readjson and give error
+	if jsonErr := utils.ReadJsonBody(r, &payload); jsonErr != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Something went wrong while getting user by id", jsonErr)
+		return
+	}
+
+	fmt.Println("Payload received:", payload.Id)
+	//validate payload
+	if validationErr := utils.Validator.Struct(payload); validationErr != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid input data", validationErr)
+		return
+	}
+
+	user, err := uc.UserService.GetUserByID(payload.Id)
+
+	//deal with this err
+	if err != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Failed to get user", err)
+		return
+	}
+
+	//success response
+	utils.WriteJsonSuccessResponse(w, http.StatusOK, "User got successfully", user)
+
 }
 
-func (uc *UserController) CreateUser(w http.ResponseWriter,r *http.Request){
-	fmt.Println("Create User called in UserController")
-	uc.UserService.CreateUser()
-	w.Write([]byte("user creation endpoint done"))
+func (uc *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
+
+	var payload dto.CreateUserDTO
+
+	//readjson and give error
+	if jsonErr := utils.ReadJsonBody(r, &payload); jsonErr != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Something went wrong while reading the json", jsonErr)
+		return
+	}
+
+	fmt.Println("Payload received:", payload)
+	//validate payload
+	if validationErr := utils.Validator.Struct(payload); validationErr != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusBadRequest, "Invalid input data", validationErr)
+		return
+	}
+
+	user, err := uc.UserService.CreateUser(&payload)
+
+	if err != nil {
+		utils.WriteJsonErrorResponse(w, http.StatusInternalServerError, "Failed to create user", err)
+		return
+	}
+
+	//success response
+	utils.WriteJsonSuccessResponse(w, http.StatusOK, "User created successfully", user)
 }
 
 func (uc *UserController) Login(w http.ResponseWriter,r *http.Request){
